@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Entry Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#030712;--surface:#0a1628;--card:#0d1f3c;--border:#1a3356;--border2:#2a5080;--green:#10b981;--blue:#3b82f6;--orange:#f97316;--red:#ef4444;--amber:#f59e0b;--text:#e2e8f0;--muted:#64748b;--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:48px 48px;opacity:.12;pointer-events:none}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 40% at 50% 0%,rgba(16,185,129,.07) 0%,transparent 60%);pointer-events:none}
+
+header{border-bottom:1px solid var(--border);padding:14px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;background:rgba(3,7,18,.9);backdrop-filter:blur(12px)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-box{width:32px;height:32px;border:1.5px solid var(--green);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--green)}
+.logo-name{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.logo-tag{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.hright{display:flex;align-items:center;gap:14px}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.badge{font-family:var(--mono);font-size:9px;color:var(--muted);border:1px solid var(--border2);padding:3px 8px;border-radius:3px}
+.badge span{color:var(--blue)}
+
+.qpanel{max-width:1400px;margin:28px auto;padding:0 28px}
+.qcard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;position:relative;overflow:hidden}
+.qcard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--green),transparent)}
+.qlabel{font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--green);text-transform:uppercase;margin-bottom:18px}
+.qgrid{display:grid;grid-template-columns:1fr 1fr 1fr 200px 160px auto;gap:10px;align-items:end}
+.field label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:5px}
+.field input,.field select{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:7px;padding:10px 12px;font-family:var(--sans);font-size:14px;color:var(--text);outline:none;transition:border-color .2s;appearance:none}
+.field input:focus,.field select:focus{border-color:var(--green)}
+.field input::placeholder{color:var(--muted)}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.btn-run{background:var(--green);color:#000;border:none;border-radius:7px;padding:10px 24px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-run:hover{background:#059669}
+.btn-run:disabled{opacity:.4;cursor:not-allowed}
+
+.prog{margin-top:14px;display:none}
+.prog.on{display:block}
+.prog-meta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+.prog-bar{height:2px;background:var(--border);border-radius:1px}
+.prog-fill{height:100%;background:var(--green);border-radius:1px;transition:width .4s;box-shadow:0 0 8px rgba(16,185,129,.5);width:0%}
+
+.cwrap{max-width:1400px;margin:0 auto;padding:0 28px 48px}
+.cgrid{display:grid;gap:16px}
+.cgrid.c1{grid-template-columns:1fr}
+.cgrid.c2{grid-template-columns:1fr 1fr}
+.cgrid.c3{grid-template-columns:1fr 1fr 1fr}
+
+.ccol{display:flex;flex-direction:column;gap:10px}
+
+.cheader{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;position:relative;overflow:hidden}
+.cheader.winner{border-color:var(--amber)}
+.winner-badge{position:absolute;top:10px;right:12px;font-family:var(--mono);font-size:9px;color:var(--amber);letter-spacing:.1em;display:none}
+.cheader.winner .winner-badge{display:block}
+.cname{font-size:18px;font-weight:700;margin-bottom:3px}
+.csub{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+
+.gauge-row{display:flex;align-items:center;gap:14px;margin-top:12px}
+.gsvg{width:80px;height:44px}
+.gnum{font-size:28px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:var(--muted)}
+.gpct{font-size:13px;color:var(--muted)}
+.glbl{font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+
+.chips{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:9px;padding:3px 8px;border-radius:3px;border:1px solid;letter-spacing:.08em;text-transform:uppercase}
+.chip-high{color:var(--green);border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.07)}
+.chip-medium{color:var(--amber);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.07)}
+.chip-low{color:var(--red);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.07)}
+.chip-time{color:var(--muted);border-color:var(--border)}
+
+.verdict{margin-top:8px;font-size:12px;color:var(--text);line-height:1.5;display:none}
+.verdict.on{display:block}
+
+.acard{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;transition:border-color .3s}
+.acard.scanning{border-color:rgba(59,130,246,.4)}
+.acard.done{border-color:rgba(16,185,129,.25)}
+.atop{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.aleft{display:flex;align-items:center;gap:8px}
+.aicon{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;border:1px solid;flex-shrink:0}
+.aname{font-size:12px;font-weight:600}
+.adesc{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:1px}
+.astatus{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:3px;border:1px solid;letter-spacing:.08em;text-transform:uppercase}
+.s-idle{color:var(--muted);border-color:var(--border)}
+.s-scanning{color:var(--blue);border-color:rgba(59,130,246,.3);animation:blink 1s infinite}
+.s-done{color:var(--green);border-color:rgba(16,185,129,.3)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+.brow{display:flex;align-items:center;gap:8px}
+.bbg{flex:1;height:3px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden}
+.bfill{height:100%;width:0%;border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.bscore{font-family:var(--mono);font-size:10px;font-weight:700;min-width:34px;text-align:right;color:var(--muted)}
+.bscore.on{color:var(--text)}
+
+.evlist{margin-top:8px;display:flex;flex-direction:column;gap:3px}
+.evitem{font-family:var(--mono);font-size:10px;color:var(--muted);padding:4px 8px;background:rgba(255,255,255,.02);border-left:2px solid;border-radius:0 3px 3px 0;line-height:1.5;opacity:0;animation:slidein .3s forwards}
+@keyframes slidein{to{opacity:1;transform:translateX(0)}from{opacity:0;transform:translateX(-6px)}}
+
+.report{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;display:none}
+.report.on{display:block}
+.rtitle{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--green);text-transform:uppercase;margin-bottom:12px}
+.finding{display:flex;gap:8px;margin-bottom:9px;padding-bottom:9px;border-bottom:1px solid var(--border)}
+.finding:last-child{border:none;margin:0;padding:0}
+.fnum{font-family:var(--mono);font-size:10px;color:var(--green);font-weight:700;min-width:18px}
+.ftext{font-size:11px;color:var(--text);line-height:1.6}
+.impl{margin-top:12px;padding:10px;background:rgba(59,130,246,.05);border:1px solid rgba(59,130,246,.15);border-radius:6px;font-size:11px;color:var(--muted);line-height:1.6}
+.actions{margin-top:10px}
+.action{display:flex;gap:6px;margin-bottom:6px;font-size:11px;color:var(--muted);line-height:1.5}
+.action::before{content:'→';color:var(--orange);font-family:var(--mono);font-weight:700;flex-shrink:0}
+.btn-exp{width:100%;margin-top:12px;background:transparent;border:1px solid var(--border2);color:var(--muted);border-radius:6px;padding:8px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;cursor:pointer;transition:all .2s;text-transform:uppercase}
+.btn-exp:hover{border-color:var(--green);color:var(--green)}
+
+.idle{text-align:center;padding:64px 20px;color:var(--muted)}
+.idle-icon{font-size:36px;opacity:.2;margin-bottom:14px}
+.idle-text{font-size:13px;line-height:1.8}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-box">MEP</div>
+    <div>
+      <div class="logo-name">Market Entry Predictor</div>
+      <div class="logo-tag">Competitive Intelligence Platform v2</div>
+    </div>
+  </div>
+  <div class="hright">
+    <div class="pulse"></div>
+    <div class="badge">Powered by <span>Bright Data</span> + <span>OpenAI</span></div>
+  </div>
+</header>
+
+<div class="qpanel">
+  <div class="qcard">
+    <div class="qlabel">// Intelligence Query</div>
+    <div class="qgrid">
+      <div class="field"><label>Company 1 *</label><input id="c1" type="text" placeholder="e.g. Stripe" value="Stripe"></div>
+      <div class="field"><label>Company 2</label><input id="c2" type="text" placeholder="e.g. Adyen (optional)"></div>
+      <div class="field"><label>Company 3</label><input id="c3" type="text" placeholder="e.g. Square (optional)"></div>
+      <div class="field"><label>Target Market</label><input id="market" type="text" placeholder="e.g. Insurance" value="Insurance"></div>
+      <div class="field">
+        <label>Country</label>
+        <select id="country">
+          <option>Global</option><option>United States</option><option>United Kingdom</option>
+          <option>India</option><option>Germany</option><option>France</option>
+          <option>Singapore</option><option>UAE</option><option>Brazil</option>
+          <option>Japan</option><option>Australia</option><option>Canada</option>
+        </select>
+      </div>
+      <button class="btn-run" id="runBtn" onclick="startAnalysis()">Run Analysis</button>
+    </div>
+    <div class="prog" id="prog">
+      <div class="prog-meta"><span id="progLabel">Initializing...</span><span id="progCount"></span></div>
+      <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="cwrap">
+  <div class="cgrid c1" id="grid">
+    <div class="idle">
+      <div class="idle-icon">◎</div>
+      <div class="idle-text">Enter up to 3 companies and a target market.<br>Select a country for geo-specific intelligence.<br>5 AI agents per company will analyze the web.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const AMETA = {
+  job_posts:    {name:"Job Posting Signals",   color:"#10b981"},
+  domain_regs:  {name:"Domain Registration",   color:"#3b82f6"},
+  exec_hires:   {name:"Executive Hire Signals",color:"#f97316"},
+  partnerships: {name:"Partnership & Conference",color:"#8b5cf6"},
+  patents:      {name:"Patent & IP Signals",   color:"#f59e0b"},
+};
+const AEMOJI = {job_posts:"💼",domain_regs:"🌐",exec_hires:"👤",partnerships:"🤝",patents:"📄"};
+
+let running = false;
+let reportData = {};
+
+function companies() {
+  return ["c1","c2","c3"].map(id => document.getElementById(id).value.trim()).filter(Boolean);
+}
+
+function startAnalysis() {
+  if (running) return;
+  const cos = companies();
+  if (!cos.length) return;
+  const market  = document.getElementById("market").value.trim();
+  const country = document.getElementById("country").value;
+  if (!market) return;
+
+  running = true;
+  reportData = {};
+  document.getElementById("runBtn").disabled = true;
+  document.getElementById("runBtn").textContent = "Analyzing...";
+  document.getElementById("prog").classList.add("on");
+  setProgress("Starting analysis...", 0, cos.length * 5);
+
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  grid.className = "cgrid c" + cos.length;
+  cos.forEach(c => { grid.insertAdjacentHTML("beforeend", buildCol(c, market, country)); });
+
+  fetch("/api/analyze", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({companies: cos, target_market: market, country: country})
+  }).then(async resp => {
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, {stream: true});
+      const lines = buf.split("\n");
+      buf = lines.pop();
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          try { handle(JSON.parse(line.slice(6))); } catch(e) { console.error(e); }
+        }
+      }
+    }
+  }).catch(err => {
+    console.error(err);
+    finish();
+  });
+}
+
+function buildCol(company, market, country) {
+  const cards = Object.entries(AMETA).map(([id, m]) => `
+    <div class="acard" id="ac-${company}-${id}">
+      <div class="atop">
+        <div class="aleft">
+          <div class="aicon" style="color:${m.color};border-color:${m.color}33;background:${m.color}0d">${AEMOJI[id]}</div>
+          <div><div class="aname">${m.name}</div><div class="adesc" id="ad-${company}-${id}">Standby</div></div>
+        </div>
+        <div class="astatus s-idle" id="as-${company}-${id}">IDLE</div>
+      </div>
+      <div class="brow">
+        <div class="bbg"><div class="bfill" id="bf-${company}-${id}" style="background:${m.color}"></div></div>
+        <div class="bscore" id="bs-${company}-${id}">—</div>
+      </div>
+      <div class="evlist" id="ev-${company}-${id}"></div>
+    </div>`).join("");
+
+  return `
+  <div class="ccol" id="col-${company}">
+    <div class="cheader" id="ch-${company}">
+      <div class="winner-badge">👑 WINNER</div>
+      <div class="cname">${company}</div>
+      <div class="csub">${market} · ${document.getElementById("country").value}</div>
+      <div class="gauge-row">
+        <svg class="gsvg" viewBox="0 0 80 44">
+          <path d="M8 40 A32 32 0 0 1 72 40" fill="none" stroke="#1a3356" stroke-width="5" stroke-linecap="round"/>
+          <path id="gf-${company}" d="M8 40 A32 32 0 0 1 72 40" fill="none" stroke="#10b981" stroke-width="5" stroke-linecap="round" stroke-dasharray="101" stroke-dashoffset="101"/>
+        </svg>
+        <div>
+          <div><span class="gnum" id="gn-${company}">—</span><span class="gpct" id="gp-${company}"></span></div>
+          <div class="glbl" id="gl-${company}">Scanning</div>
+        </div>
+      </div>
+      <div class="chips" id="chips-${company}"></div>
+      <div class="verdict" id="vd-${company}"></div>
+    </div>
+    ${cards}
+    <div class="report" id="rep-${company}">
+      <div class="rtitle">// Key Intelligence Findings</div>
+      <div id="rf-${company}"></div>
+      <div class="impl" id="ri-${company}"></div>
+      <div class="actions" id="ra-${company}"></div>
+      <button class="btn-exp" onclick="exportReport('${company}')">Export Brief</button>
+    </div>
+  </div>`;
+}
+
+function handle(ev) {
+  switch(ev.type) {
+    case "start":
+      setProgress("Analyzing " + ev.companies.join(", ") + " in " + ev.country + "...", 0, ev.companies.length * 5);
+      break;
+
+    case "agent_complete": {
+      const d = ev.data, c = ev.company, id = ev.agent_id;
+      const card = document.getElementById("ac-"+c+"-"+id);
+      if (card) { card.classList.remove("scanning"); card.classList.add("done"); }
+      setStatus(c, id, "s-done", "DONE");
+      setDesc(c, id, d.results_found + " results · " + d.strength.toUpperCase());
+      const pct = d.max_score ? Math.round((d.score/d.max_score)*100) : 0;
+      const bf = document.getElementById("bf-"+c+"-"+id);
+      const bs = document.getElementById("bs-"+c+"-"+id);
+      if (bf) bf.style.width = pct + "%";
+      if (bs) { bs.textContent = d.score+"/"+d.max_score; bs.classList.add("on"); }
+      const evl = document.getElementById("ev-"+c+"-"+id);
+      const color = AMETA[id]?.color || "#10b981";
+      (d.evidence||[]).forEach((e,i) => {
+        setTimeout(() => {
+          if (evl) evl.insertAdjacentHTML("beforeend", `<div class="evitem" style="border-color:${color}66">${e}</div>`);
+        }, i*80);
+      });
+      const allDone = Object.keys(AMETA).every(aid => {
+        const el = document.getElementById("as-"+c+"-"+aid);
+        return el && el.textContent === "DONE";
+      });
+      const cos = companies();
+      const doneCos = cos.filter(co => Object.keys(AMETA).every(aid => {
+        const el = document.getElementById("as-"+co+"-"+aid);
+        return el && el.textContent === "DONE";
+      }));
+      setProgress("Agents running...", doneCos.length * 5, cos.length * 5);
+      break;
+    }
+
+    case "company_complete": {
+      const d = ev.data, c = ev.company;
+      reportData[c] = d;
+      animateGauge(c, d.probability);
+      const chips = document.getElementById("chips-"+c);
+      if (chips) chips.innerHTML = `<div class="chip chip-${d.confidence}">${d.confidence}</div><div class="chip chip-time">${d.timeline}</div>`;
+      const vd = document.getElementById("vd-"+c);
+      if (vd) { vd.textContent = d.verdict; vd.classList.add("on"); }
+      const rf = document.getElementById("rf-"+c);
+      if (rf) (d.key_findings||[]).forEach((f,i) => {
+        rf.insertAdjacentHTML("beforeend", `<div class="finding"><div class="fnum">0${i+1}</div><div class="ftext">${f}</div></div>`);
+      });
+      const ri = document.getElementById("ri-"+c);
+      if (ri) ri.textContent = d.strategic_implication;
+      const ra = document.getElementById("ra-"+c);
+      if (ra) (d.recommended_actions||[]).forEach(a => {
+        ra.insertAdjacentHTML("beforeend", `<div class="action">${a}</div>`);
+      });
+      const rep = document.getElementById("rep-"+c);
+      if (rep) rep.classList.add("on");
+      break;
+    }
+
+    case "complete":
+      setProgress("Analysis complete", 1, 1);
+      highlightWinner();
+      finish();
+      break;
+
+    case "error":
+      console.error("Server error:", ev.message);
+      finish();
+      break;
+  }
+}
+
+function animateGauge(company, target) {
+  const gn = document.getElementById("gn-"+company);
+  const gp = document.getElementById("gp-"+company);
+  const gl = document.getElementById("gl-"+company);
+  const gf = document.getElementById("gf-"+company);
+  if (!gn) return;
+  gp.textContent = "%";
+  const color = target>=70?"#10b981":target>=40?"#f59e0b":"#ef4444";
+  gn.style.color = color;
+  if (gf) gf.style.stroke = color;
+  let cur = 0;
+  const iv = setInterval(() => {
+    cur = Math.min(cur + target/60, target);
+    gn.textContent = Math.round(cur);
+    if (gf) gf.style.strokeDashoffset = 101 - (101*cur/100);
+    if (cur >= target) { clearInterval(iv); if (gl) gl.textContent = "Entry Probability"; }
+  }, 16);
+}
+
+function setStatus(company, agentId, cls, text) {
+  const el = document.getElementById("as-"+company+"-"+agentId);
+  if (el) { el.className = "astatus "+cls; el.textContent = text; }
+}
+
+function setDesc(company, agentId, text) {
+  const el = document.getElementById("ad-"+company+"-"+agentId);
+  if (el) el.textContent = text;
+}
+
+function setProgress(label, done, total) {
+  document.getElementById("progLabel").textContent = label;
+  document.getElementById("progCount").textContent = total ? done+"/"+total : "";
+  document.getElementById("progFill").style.width = total ? Math.round((done/total)*100)+"%" : "100%";
+}
+
+function highlightWinner() {
+  const cos = Object.keys(reportData);
+  if (cos.length < 2) return;
+  let best = cos[0];
+  cos.forEach(c => { if ((reportData[c]?.probability||0) > (reportData[best]?.probability||0)) best = c; });
+  const el = document.getElementById("ch-"+best);
+  if (el) el.classList.add("winner");
+}
+
+function finish() {
+  running = false;
+  document.getElementById("runBtn").disabled = false;
+  document.getElementById("runBtn").textContent = "Run Analysis";
+}
+
+function exportReport(company) {
+  const r = reportData[company] || {};
+  const lines = [
+    "MARKET ENTRY INTELLIGENCE BRIEF","================================",
+    "Company:  "+company,
+    "Market:   "+document.getElementById("market").value,
+    "Country:  "+document.getElementById("country").value,
+    "Date:     "+new Date().toLocaleString(),"",
+    "PROBABILITY: "+r.probability+"% | CONFIDENCE: "+(r.confidence||"").toUpperCase()+" | TIMELINE: "+r.timeline,
+    "VERDICT: "+r.verdict,"",
+    "KEY FINDINGS","------------",
+    ...(r.key_findings||[]).map((f,i)=>(i+1)+". "+f),"",
+    "STRATEGIC IMPLICATION","---------------------",r.strategic_implication||"","",
+    "RECOMMENDED ACTIONS","-------------------",
+    ...(r.recommended_actions||[]).map((a,i)=>(i+1)+". "+a),"",
+    "--- Market Entry Predictor v2 ---",
+  ];
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/plain"}));
+  a.download = "MEP-"+company+"-"+Date.now()+".txt";
+  a.click();
+}
+</script>
+</body>
+</html>
